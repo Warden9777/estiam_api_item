@@ -1,26 +1,31 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.requests import Request
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Item
+from model import Item
+from typing import List
+from pydantic import BaseModel
 
 app = FastAPI()
 
-@app.get("/items/")
+class ItemResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+
+@app.get("/items/", response_model=List[ItemResponse])
 async def read_items():
     session = SessionLocal()
     items = session.query(Item).all()
-    return {"items": [{"id": item.id, "name": item.name, "description": item.description} for item in items]}
+    return [{"id": item.id, "name": item.name, "description": item.description} for item in items]
 
-@app.post("/items/")
+@app.post("/items/", response_model=ItemResponse)
 async def create_item(item: Item):
     session = SessionLocal()
     session.add(item)
     session.commit()
     return {"id": item.id, "name": item.name, "description": item.description}
 
-@app.get("/items/{item_id}")
+@app.get("/items/{item_id}", response_model=ItemResponse)
 async def read_item(item_id: int):
     session = SessionLocal()
     item = session.query(Item).filter(Item.id == item_id).first()
